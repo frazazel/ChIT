@@ -1085,7 +1085,7 @@ effect getNextBeard() {
 		int lastBeardNum = getLastBeardNum();
 		if(lastBeardNum == -1) {
 			// now that it's mafia tracked we can trust that it's reliable enough
-			beardOrder[0];
+			beardOrder[1];
 		}
 		return beardOrder[(lastBeardNum + 1) % 11];
 	}
