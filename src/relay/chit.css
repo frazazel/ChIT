@@ -88,19 +88,27 @@ a.blue-link:hover {
 
 #chit_house {
 }
+
 #chit_roof {
 	overflow-y: hidden;
 }
+
 #chit_walls {
 	margin-top: -10px;
 	margin-bottom: -6px;
 	position: absolute;
+	z-index: -1;
 }
+
+#chit_walls .brick_column {
+	height: unset;
+}
+
 #chit_floor {
 	position: absolute;
 }
 
-.chit_chamber{
+.chit_chamber {
 	width: 100%;
 	overflow-x: hidden;
 	overflow-y: auto;
@@ -146,13 +154,14 @@ table.chit_brick {
 	empty-cells: show;
 	font-size: 12px;
 	font-weight: normal;
-	margin-bottom: 5px;
+	flex-grow: 1;
+}
+table.chit_brick > thead,
+table.chit_brick > tbody {
+	display: table;
 	width: 100%;
-	padding: 1px 1px 0px 1px;
 }
-table.chit_brick:last-child {
-	margin-bottom: 0px;
-}
+
 table.chit_brick a {
 	text-decoration: none;
 }
@@ -169,7 +178,7 @@ div.chit_skeleton table.chit_brick {
 }
 table.chit_brick th {
 	word-wrap: break-word;
-	max-width: 200px;
+	width: 100%;
 	text-align: center;
 	vertical-align: middle;
 	background-color: #f0f0f0;
@@ -283,15 +292,51 @@ tr.florist :first-line {
 }
 
 /* Character Panel */
+#chit_character {
+	display: inline-block;
+}
+
+#chit_character td.info:first-child {
+	display: none;
+}
+
 #chit_character tr td.level {
 	font-size: 21px;
-	background-color: #f8f8f8;
-	width: 40px;
+	text-align: right;
+	padding: 0 3px;
+	display: block;
+	float: right;
+	width: auto !important;
+}
+
+#chit_character .chit_resource {
+	position: static;
+	z-index: 1;
+	text-align: right;
+}
+
+#chit_character .chit_resource div:last-child {
+	position: relative;
+	margin-left: -50px;
+	float: none !important;
+}
+
+#chit_character .chit_resource div.hand {
+	order: 3;
+	margin: 7px 0 0 -100px;
+	z-index: 1;
+}
+#chit_character tr:nth-child(4) .chit_resource div {
+	/*margin-top: -50px;*/
+}
+
+#chit_character tr:nth-child(5) .chit_resource div:last-child {
+	/*margin-top: -38px;*/
 }
 
 #chit_character tr td.avatar {
 	background-color: white;
-	padding: 2px;
+	padding: 0px;
 	width: 45px;
 	vertical-align: middle;
 }
@@ -300,6 +345,7 @@ tr.florist :first-line {
 	width: 75px;
 	position: relative;
 }
+
 #chit_character tr td.avatar a div {
 	height: 75px;
 	width: auto;
@@ -309,11 +355,24 @@ tr.florist :first-line {
 	height: 75px;
 	width: 75px;
 }
+
 #chit_character tr td.label {
 	font-weight: bold;
-	text-align: left;
-	padding: 1px 4px;
+	font-color: #555;
+	text-align: center;
+	padding: 1px 3px;
+	display: block;
+	position: relative;
+	margin: 0 0 0 -60px;
+	z-index: 1;
 }
+
+
+#chit_character tr td.label a {
+	/*color: #88f;*/
+	text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white;
+}
+
 #chit_character tr td.info {
 	color: #606060;
 	text-align: left;
@@ -340,8 +399,11 @@ tr.florist :first-line {
 .chit_resource {
 	color: darkred;
 	font-weight: bold;
-	background-color: #f8f8f8;
+	background-color: white;
 	padding: 0px 2px;
+	display: inline-flex;
+	flex-direction: column;
+	float: right;
 }
 .chit_resource div span,
 .chit_resource div img {
@@ -372,8 +434,27 @@ tr.florist :first-line {
 }
 
 /* Stats Panel */
+
+#chit_stats {
+	display:flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: space-evenly;
+}
+
 #chit_stats tbody tr:first-child td {
 	border-top: 1px solid #f0f0f0;
+}
+
+#chit_stats tbody {
+	display: inline-block;
+	float: left;
+	width: 108px;
+	padding: 0 2%;
+}
+
+#chit_stats tbody:last-child td {
+	display: revert !important;
 }
 
 #chit_stats tr td.label,
@@ -384,6 +465,18 @@ tr.florist :first-line {
 	padding: 2px;
 	width: 50px;
 }
+#chit_organs td.progress {
+	display: none;
+}
+#chit_organs tbody tr {
+	display: block;
+	width: 100px;
+	margin: auto;
+}
+#chit_organs td {
+	float: left;
+}
+
 #chit_stats tr td.info,
 #chit_substats tr td.info tr td.info {
 	color: #606060;
@@ -416,9 +509,7 @@ tr.florist :first-line {
 #chit_stats tr td.progress a:hover {
 	color: blue;
 }
-#chit_stats.nobars tr td.info {
-	width: 135px;
-}
+
 #chit_stats tr td.progress,
 #chit_substats tr td.progress,
 #chit_organs tr td.progress {
@@ -506,15 +597,38 @@ div.progressbar {
 }
 
 /* Familiars Panel */
-#chit_familiar tr td.progress {
+
+#chit_familiar tbody{
+	height: 100%;
+}
+
+#chit_familiar tr:last-child {
+	display: table-cell;
+	vertical-align: middle;
+}
+
+#chit_familiar tr:last-child td {
+	/*min-height: 90px;*/
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	align-content: space-around;
+}
+
+#chit_familiar tr:first-child th {
+	max-height: 16px;
+}
+
+#chit_familiar tr .progress {
 	border-top: 1px solid #dddddd;
 }
-#chit_familiar tr td.progress div.progressbar {
+#chit_familiar tr .progress .progressbar {
 	height: 4px;
 }
-#chit_familiar tr td.info {
-	border-left: 1px solid #f0f0f0;
-	border-right: 1px solid #f0f0f0;
+#chit_familiar tr .info {
+	min-width: 50%;
 	font-weight: bold;
 	line-height: 1.4;
 }
@@ -777,6 +891,7 @@ table.chit_picker tr.pickitem a:hover {
 
 /* chit_skeleton */
 div.chit_skeleton {
+    text-align: -webkit-center;
 	position: absolute;
 	display: block;
 	z-index: 10;
@@ -883,13 +998,12 @@ img#fam_equip {
 	z-index: 5;
 }
 #fam_lock {
-	position: absolute;
-	top: 21;
-	left: 17;
+	position: relative;
+	margin-left: -19px !important;
+	filter: opacity(0.75);
 	z-index: 10;
 	max-width: 16px;
 	max-height: 16px;
-	border: 1px solid black;
 }
 
 /* Quests Tracker Panel added by ckb */
@@ -929,6 +1043,8 @@ img#fam_equip {
 	margin: 0;
 	padding: 0;
 	list-style: none;
+	z-index: 1;
+	text-align: right;
 }
 #chit_currency span {
 	color: darkred;
@@ -936,21 +1052,22 @@ img#fam_equip {
 }
 #chit_currency ul li {
 	display: block;
-	position: relative;
-	z-index: 12;
+	/*position: relative;
+	z-index: 12;*/
+	background-color: white;
+	border: solid gray;
+	border-width: 1px 1px 0 1px;
 }
-#chit_currency li ul {
-	margin: 0;
-	padding: 0;
+#chit_currency ul li a {
+	padding: 5px 15px;
+}
+#chit_currency ul {
 	text-align: right;
 	display: none;
 }
 #chit_currency ul li a {
 	display: block;
 	text-decoration: none;
-	padding: 5px 15px 5px 15px;
-	background: #ffffff;
-	margin-left: 1px;
 	white-space: nowrap;
 	font-weight: bold;
 	color: black;
@@ -960,37 +1077,34 @@ img#fam_equip {
 #chit_currency ul li img {
 	max-width: 14px;
 	max-height: 14px;
+	mix-blend-mode: darken;
 }
-#chit_currency ul li.current a {
-	background: #dddddd;
+#chit_currency ul li.current {
+	background-color: #dddddd;
 }
-#chit_currency ul li a:hover {
-	background: #bbbbbb;
+#chit_currency ul li:hover {
+	background-color: #bbbbbb;
 }
 #chit_currency li:hover ul {
 	display: block;
-	position: absolute;
-	border: 1px solid gray;
+	position: fixed;
+	margin-left: -40px;
 }
-#chit_currency li:hover li {
+#chit_currency li:hover ul li {
 	float: none;
 	font-size: 12px;
-	border-bottom: 1px solid gray;
 }
 #chit_currency li:hover li.currency_edit {
-	border-bottom: none;
-}
-#chit_currency span.currency_block {
-	margin-left: 0.3em;
-	margin-right: 0.3em;
+	border-bottom: 1px solid gray;
 }
 #chit_currency span.currency_amount {
 	margin-right: 0em;
+	background-color: white;
 }
 #chit_currency img.currency_icon {
 	margin-left: 0em;
 	padding-left: 0.1em;
-	padding-right: 0.2em;
+	/*padding-right: 0.2em;*/
 }
 
 img.chit_icon {
@@ -1103,13 +1217,4 @@ div.chit_left-handman {
 
 .darkrow {
 	background-color: #e3e3e3;
-}
-
-.error_message {
-	border: 1px solid red;
-	background-color: #fdd;
-}
-
-.code {
-	font-family: monospace;
 }
