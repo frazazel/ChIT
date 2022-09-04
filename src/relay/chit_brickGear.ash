@@ -6,7 +6,7 @@ boolean [string] forceSections;
 boolean aftercore = qprop("questL13Final");
 
 float equip_modifier(item it, string mod) {
-	if(my_path() == "Gelatinous Noob") return 0;
+	if(my_path().name == "Gelatinous Noob") return 0;
 	switch(it) {
 	case $item[your cowboy boots]:
 		return equipped_item($slot[bootskin]).numeric_modifier(mod)
@@ -198,7 +198,7 @@ string gearName(item it, slot s) {
 			break;
 		case $item[backup camera]:
 			// 5 extra uses in You, Robot
-			int backupsLeft = (my_path_id() == 41 ? 16 : 11) - get_property("_backUpUses").to_int();
+			int backupsLeft = (my_path().id == 41 ? 16 : 11) - get_property("_backUpUses").to_int();
 			notes = backupsLeft + " backups left: " + get_property("lastCopyableMonster");
 			if(!get_property("backupCameraReverserEnabled").to_boolean()) {
 				notes += ", REVERSER NOT ENABLED!";
@@ -264,6 +264,12 @@ string gearName(item it, slot s) {
 			notes += sweat + "% sweaty";
 			if(sweatboozeleft > 0) {
 				notes += ", " + sweatboozeleft + " booze sweats";
+			}
+			break;
+		case $item[Jurassic Parka]:
+			string parkaMode = get_property("parkaMode");
+			if(parkaMode.length() > 0) {
+				notes += parkaMode + " mode";
 			}
 			break;
 	}
@@ -369,7 +375,7 @@ void addGear(item it, string reason, float score)
 {
 	class gear_class = class_modifier(it,"Class");
 
-	if(vars["chit.gear.ignoreG-Lover"].to_boolean() == false && my_path() == "G-Lover" && reason != "quest" && index_of(it.to_lower_case(), "g") < 0)
+	if(vars["chit.gear.ignoreG-Lover"].to_boolean() == false && my_path().name == "G-Lover" && reason != "quest" && index_of(it.to_lower_case(), "g") < 0)
 		return;
 
 	if(is_unrestricted(it) && can_equip(it) && chit_available(it, reason) > 0
@@ -583,7 +589,7 @@ void addFavGear() {
 						ok = false;
 					break;
 				case "Path":
-					if(my_path() != val)
+					if(my_path().name != val)
 						ok = false;
 					break;
 				case "Force":
@@ -1241,6 +1247,50 @@ void pickerSweatpants() {
 	chitPickers['sweatpants'] = picker;
 }
 
+void pickerJurassicParka() {
+	buffer picker;
+	string currMode = get_property("parkaMode");
+	int yellowTurns = have_effect($effect[Everything Looks Yellow]);
+	int spikesLeft = 5 - get_property("_spikolodonSpikeUses").to_int();
+	picker.pickerStart('jurassicparka', "Change Parka Mode");
+
+	void addMode(string name, string desc, string image) {
+		string switchLink = '<a class="change" href="' + sideCommand("parka " + name) + '">';
+		boolean current = currMode == name;
+
+		picker.append('<tr class="pickitem');
+		if(current) picker.append(' currentitem');
+		picker.append('"><td class="icon"><img class="chit_icon" src="/images/itemimages/');
+		picker.append(image);
+		picker.append('" /></td><td colspan="2">');
+		if(!current) {
+			picker.append(switchLink);
+			picker.append('<b>Change</b> to ');
+		}
+		else {
+			picker.append('<b>Current</b>: ');
+		}
+		picker.append(name);
+		picker.append(' mode<br /><span class="descline">');
+		picker.append(desc);
+		picker.append('</span>');
+		if(!current) picker.append('</a>');
+		picker.append('</td></tr>');
+	}
+
+	addMode("kachungasaur", "Max HP +100%, +50% Meat Drop, +2 Cold Res", "jparka8.gif");
+	addMode("dilophosaur", "+20 All Sleaze Damage, +2 Stench Res, Free Kill Yellow Ray ("
+		+ (yellowTurns > 0 ? (yellowTurns + " adv until usable") : "ready") + ")", "jparka3.gif");
+	addMode("spikolodon", "+" + min(3 * my_level(), 33) + " ML, +2 Sleaze Res, "
+		+ (spikesLeft > 0 ? spikesLeft.to_string() : "no") + " non-com forces left", "jparka2.gif");
+	addMode("ghostasaurus", "10 DR, +50 Max MP, +2 Spooky Res", "jparka1.gif");
+	addMode("pterodactyl", "+5% noncom, +50% init, +2 Hot Res", "jparka9.gif");
+
+	picker.addLoader("Pulling dino tab...");
+	picker.append('</table></div>');
+	chitPickers['jurassicparka'] = picker;
+}
+
 int dangerLevel(item it, slot s);
 
 void pickerGear(slot s) {
@@ -1472,6 +1522,13 @@ void pickerGear(slot s) {
 			start_option(in_slot, true);
 			picker.append('<td colspan="2"><a class="chit_launcher done" ');
 			picker.append('rel="chit_pickersweatpants" href="#"><b>Use</b> some sweat</a>');
+			picker.append('</td></tr>');
+			break;
+		case $item[Jurassic Parka]:
+			pickerJurassicParka();
+			start_option(in_slot, true);
+			picker.append('<td colspan="2"><a class="chit_launcher done" ');
+			picker.append('rel="chit_pickerjurassicparka" href="#"><b>Pick</b> parka mode</a>');
 			picker.append('</td></tr>');
 			break;
 	}
@@ -1956,7 +2013,7 @@ void addGear(buffer result) {
 
 		switch(s) {
 		case $slot[hat]:
-			if(my_path() == "You, Robot" && get_property("youRobotTop") != "4") {
+			if(my_path().name == "You, Robot" && get_property("youRobotTop") != "4") {
 				result.append(badSlot("Need Mannequin Head"));
 				return;
 			}
@@ -1968,7 +2025,7 @@ void addGear(buffer result) {
 			}
 			break;
 		case $slot[weapon]:
-			if(my_path() == "You, Robot" && get_property("youRobotLeft") != "4") {
+			if(my_path().name == "You, Robot" && get_property("youRobotLeft") != "4") {
 				result.append(badSlot("Need Vice Grips"));
 				return;
 			}
@@ -1979,13 +2036,13 @@ void addGear(buffer result) {
 				pickerGear(s);
 				return;
 			}
-			else if(my_path() == "You, Robot" && get_property("youRobotRight") != "4") {
+			else if(my_path().name == "You, Robot" && get_property("youRobotRight") != "4") {
 				result.append(badSlot("Need Omni-Claw"));
 				return;
 			}
 			break;
 		case $slot[pants]:
-			if(my_path() == "You, Robot" && get_property("youRobotBottom") != "4") {
+			if(my_path().name == "You, Robot" && get_property("youRobotBottom") != "4") {
 				result.append(badSlot("Need Robo-Legs"));
 				return;
 			}
