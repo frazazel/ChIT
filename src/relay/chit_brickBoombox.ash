@@ -131,12 +131,12 @@ void bakeBoombox() {
 	result.append(imagePath);
 	result.append('music.png">');
 	result.append('<a class="visit" target="mainpane" ');
-	result.append('href="inv_use.php?which=3&whichitem=9919&pwd=' + my_hash() +'">SongBoom&trade; BoomBox</a></th></tr><tr>');
+	result.append('href="inv_use.php?which=3&whichitem=9919&pwd=' + my_hash() +'">SongBoom&trade;</a></th></tr><tr>');
 
 	result.append('<td class="icon" title="Current Song"><img src="' + boomboxImage(num) + '" /></td>');
 	result.append('<td class="info" colspan="3"><a title="Pick a new song" class="chit_launcher" rel="chit_pickerboombox"><b>' + boomboxSong(num) + '</b><br />');
-	result.append(parseMods(boomboxBonus(num)) + '</a><br />');
-	result.append(drop_charge + ' fights to next drop <br />');
+	result.append('</a>');
+	result.append(get_property("_boomBoxFights").to_int() + '/11 fights');
 
 	result.append('</tr></tbody></table>');
 

@@ -2254,7 +2254,7 @@ void bakeFamiliar() {
 		result.append('</a>');
 	}
 	result.append('</div>');
-	result.append('<td class="info" style="' + famstyle + '"><a title="Familiar Haiku" class="hand" onclick="fam(' + to_int(myfam) + ')" origin-level="third-party"/>' + famname + '</a>' + info + '</td>');
+	//result.append('<td class="info" style="' + famstyle + '"><a title="Familiar Haiku" class="hand" onclick="fam(' + to_int(myfam) + ')" origin-level="third-party"/>' + famname + '</a>' + info + '</td>');
 
 	if (myfam == $familiar[none]) {
 		result.append('<div class="icon"></div>');
