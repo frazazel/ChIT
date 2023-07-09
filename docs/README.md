@@ -110,6 +110,7 @@ Inside each area you can place any of the following "bricks":
 - modifiers: Some useful modifiers (+meat, +items, +combat, ML, DA, DR etc)
 - elements: Shows the KoL elements chart from the wiki (also mostly for the toolbar)
 - update: Notifies you when new versions of CHIT are available
+- next: Provides a dropdown to tell ChIT where you're going next to get recommendations beforehand
 
 ### Layout Variables
 
@@ -335,9 +336,10 @@ Helpers are there merely for convenience; they will NOT try to auto-adventure fo
   - buffs - regular effects
   - intrinsics - intrinsic effects
   - songs - only if present, this will cause all active AT songs to be displayed separately. (And other limited quantity buffs like Boris and Jarlsberg)
+  - advmods - Adventure Modifiers (currently just non-combat forcers)
   - Example:
     - intrinsics,limited,buffs - displays intrinsic effects first, then any AT songs, then all other effects/buffs
-  - Default: songs,buffs,intrinsics
+  - Default: advmods,songs,buffs,intrinsics
 - chit.effects.usermap: Allows you to use personalized versions of chit_effects.txt
   - true: uses chit_effects\_\[yourname].txt
   - false: uses chit_effects.txt (default)
@@ -358,6 +360,10 @@ Helpers are there merely for convenience; they will NOT try to auto-adventure fo
 - chit.kol.coolimages: Shows or hides KoL's images for Extreme Meter and Zombie Horde
 
   - Default: true
+
+- chit.next.maxlen: The next brick will shorten location names that are longer than this limit in its dropdown. Full location name can still be seen on mouseover when shortened. A value of 0 means no limit.
+
+  - Default: 30
 
 - chit.disable: If this is set true, then chit will be disabled
 

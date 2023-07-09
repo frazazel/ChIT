@@ -1,5 +1,5 @@
 script "Character Information Toolbox";
-since r26713; // $path changes
+since r27373; // replica iotms (including folder holder)
 import "chit_global.ash";
 import "chit_brickFamiliar.ash"; // This has to be before chit_brickGear due to addItemIcon() and... weirdly enough pickerFamiliar()
 import "chit_brickGear.ash";
@@ -8,6 +8,7 @@ import "chit_brickTerminal.ash";
 import "chit_brickHorsery.ash";
 import "chit_brickBoombox.ash";
 import "chit_brickRobo.ash";
+import "chit_brickNext.ash";
 
 // Set default values for configuration properties.
 // For more information refer to the README.md on Github
@@ -49,7 +50,7 @@ setvar("chit.helpers.spookyraven", true);
 setvar("chit.helpers.wormwood", "stats,spleen");
 setvar("chit.helpers.xiblaxian", true);
 setvar("chit.kol.coolimages", true);
-setvar("chit.effects.layout", "songs,buffs,intrinsics");
+setvar("chit.effects.layout", "advmods,songs,buffs,intrinsics");
 setvar("chit.floor.layout", "update,familiar");
 setvar("chit.roof.layout", "character,stats,gear");
 setvar("chit.stats.layout", "muscle,myst,moxie|hp,mp,axel|mcd|drip|trail,florist");
@@ -58,6 +59,7 @@ setvar("chit.walls.layout", "helpers,thrall,robo,vykea,effects,horsery,boombox")
 setvar("chit.quests.hide", false);
 setvar("chit.stats.showbars", true);
 setvar("chit.thrall.showname", false);
+setvar("chit.next.maxlen", 30);
 setvar("chit.toolbar.moods", "true"); // do not change to boolean, "bonus" is also valid
 
 /************************************************************************************
@@ -918,6 +920,8 @@ buff parseBuff(string source) {
 		columnIcon = columnIcon.replace_string(myBuff.effectImage, "lattecup1.gif");
 		myBuff.effectImage = "lattecup1.gif";
 	}
+	else if (myBuff.effectName.contains_text("Spooky VHS Monster"))
+		effectAlias = "VHS Taped " + get_property("spookyVHSTapeMonster");
 	else if(turtleBlessings contains myBuff.eff || grandTurtleBlessings contains myBuff.eff) {
 		boolean isGrand = grandTurtleBlessings contains myBuff.eff;
 		int speedUps = 0;
@@ -1051,6 +1055,7 @@ void bakeEffects() {
 	buffer buffs;
 	buffer intrinsics;
 	buffer helpers;
+	buffer advmods;
 	int total = 0;
 	boolean [string] uniqueTypesShown;
 
@@ -1058,6 +1063,9 @@ void bakeEffects() {
 	string layout = vars["chit.effects.layout"].to_lower_case().replace_string(" ", "");
 	if (layout == "") layout = "buffs";
 	boolean showSongs = contains_text(layout,"songs");
+	if(!contains_text(layout, "advmods")) {
+		layout = "advmods," + layout;
+	}
 
 	//Load effects map
 	static {
@@ -1193,6 +1201,31 @@ void bakeEffects() {
 	intrinsics.lack_effect($skill[Mist Form], $effect[Mist Form], "Mist Form");
 	intrinsics.lack_effect($skill[Flock of Bats Form], $effect[Bats Form], "Bats Form");
 
+	if(chitSource["advmods"] != "") {
+		record noncommod {
+			string icon;
+			string desc;
+			string matchtext;
+		};
+		noncommod[int] nomcommods = {
+			new noncommod("clarabell.gif", "clara's bell", "Clara's Bell"),
+			new noncommod("jellyglob.gif", "stench jelly", "jelly all over you"),
+			new noncommod("cincho.gif", "cincho fiesta exit", "exit mode on your cincho"),
+			new noncommod("jparka2.gif", "spikolodon spike", "spikes are scaring away most monsters"),
+			new noncommod("pillminder.gif", "sneakisol", "avoiding fights until something cool happens"),
+		};
+
+		foreach i,noncom in nomcommods {
+			if(chitSource["advmods"].contains_text(noncom.matchtext)) {
+				advmods.append('<tr class="effect"><td class="icon"><img height=20 width=20 src="/images/itemimages/');
+				advmods.append(noncom.icon);
+				advmods.append('" /></td><td class="info" colspan="3">Noncom guaranteed by ');
+				advmods.append(noncom.desc);
+				advmods.append('</td></tr>');
+			}
+		}
+	}
+
 	if (length(intrinsics) > 0 ) {
 		intrinsics.insert(0, '<tbody class="intrinsics">');
 		intrinsics.append('</tbody>');
@@ -1204,6 +1237,10 @@ void bakeEffects() {
 	if (length(buffs) > 0) {
 		buffs.insert(0, '<tbody class="buffs">');
 		buffs.append('</tbody>');
+	}
+	if (length(advmods) > 0) {
+		advmods.insert(0, '<tbody class="advmods">');
+		advmods.append('</tbody>');
 	}
 
 	if (total > 0) {
@@ -1220,6 +1257,7 @@ void bakeEffects() {
 					break;
 				case "songs": result.append(songs); break;
 				case "intrinsics": result.append(intrinsics); break;
+				case "advmods": result.append(advmods); break;
 				default: //ignore all other values
 			}
 		}
@@ -2659,11 +2697,11 @@ void addOrgan(buffer result, string organ, boolean showBars, int current, int li
 }
 
 void addStomach(buffer result, boolean showBars) {
-	if(can_eat())
+	if(can_eat() && fullness_limit() > 0)
 		result.addOrgan("Stomach", showBars, my_fullness(), fullness_limit(), have_effect($effect[Got Milk]) > 0);
 }
 void addLiver(buffer result, boolean showBars) {
-	if(can_drink())
+	if(can_drink() && inebriety_limit() > 0)
 		result.addOrgan("Liver", showBars, my_inebriety(), inebriety_limit(), have_effect($effect[Ode to Booze]) > 0);
 }
 void addSpleen(buffer result, boolean showBars) {
@@ -2938,6 +2976,22 @@ void bakeStats() {
 				result.append('<img style="max-width:95%;border:0px" src=images/otherimages/'+extreme.group(1)+'>');
 				result.append('</center></td></tr>');
 			}
+		}
+	}
+
+	void addScore() {
+		// <span class='nes' style='line-height: 14px; font-size: 12px;'>1,250</span>
+		matcher score = create_matcher('<font color="?([^>"]+)"?><span class=\'nes\'[^>]*>([^<]+)</span>', stats);
+		if(find(score)) {
+			result.append('<tr style="line-height: 14px; font-size: 12px;"><td');
+			if(showBars) {
+				result.append(' colspan="2"');
+			}
+			result.append(' class="scoretext"><span class="nes">Score:</span></td><td class="scorenum"><font color="');
+			result.append(score.group(1));
+			result.append('"><span class="nes">');
+			result.append(score.group(2));
+			result.append('</span></td></tr>');
 		}
 	}
 
@@ -3252,6 +3306,7 @@ void bakeStats() {
 				addAxel();
 			addBathtub();
 			addExtreme();
+			addScore();
 			checkExtra = false;
 		}
 	}
@@ -4127,6 +4182,12 @@ boolean parsePage(buffer original) {
 		source = parse.replace_first("");
 	}
 
+	parse = create_matcher('<p><b><font size=2>Adventure Modifiers:</font></b><br>(.*?)<p>', source);
+	if(find(parse)) {
+		chitSource["advmods"] = parse.group(1);
+		// don't strip out advmods from source out of an abundance of caution
+	}
+
 	// Parse the beginning of the page
 	parse = create_matcher("(^.+?)(<center id='rollover'.+?</center>)(.*?)(<table align=center><tr><td align=right>Muscle:.*?)((?:<Center>Extreme Meter:|<img src=).*?</table>(?:.*?axelottal.*?</table>)?)", source);
 	if(find(parse)) {
@@ -4408,6 +4469,7 @@ void bakeBricks() {
 						case "horsery":		bakeHorsery();		break;
 						case "boombox":		bakeBoombox();		break;
 						case "robo":		bakeRobo();			break;
+						case "next": bakeNext(); break;
 
 						// Reserved words
 						case "helpers": case "update": break;
@@ -4803,7 +4865,8 @@ buffer modifyPage(buffer source) {
 
 	// handle limit modes
 	switch(limit_mode()) {
-	case "":			// Mode is not limited
+	case "": // old way of indicating mode is not limited, just in case it reverts or something
+	case "0":			// Mode is not limited
 	case "edunder":		// Ed's Underworld
 		break;
 	case "spelunky":	// Needs special handling for the Spelunkin' minigame
