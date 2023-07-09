@@ -1,5 +1,5 @@
 script "Character Information Toolbox";
-since r26338; // full unbrella support
+since r27373; // replica iotms (including folder holder)
 import "chit_global.ash";
 import "chit_brickFamiliar.ash"; // This has to be before chit_brickGear due to addItemIcon() and... weirdly enough pickerFamiliar()
 import "chit_brickGear.ash";
@@ -8,6 +8,7 @@ import "chit_brickTerminal.ash";
 import "chit_brickHorsery.ash";
 import "chit_brickBoombox.ash";
 import "chit_brickRobo.ash";
+import "chit_brickNext.ash";
 
 // Set default values for configuration properties.
 // For more information refer to the README.md on Github
@@ -49,7 +50,7 @@ setvar("chit.helpers.spookyraven", true);
 setvar("chit.helpers.wormwood", "stats,spleen");
 setvar("chit.helpers.xiblaxian", true);
 setvar("chit.kol.coolimages", true);
-setvar("chit.effects.layout", "songs,buffs,intrinsics");
+setvar("chit.effects.layout", "advmods,songs,buffs,intrinsics");
 setvar("chit.floor.layout", "update,familiar");
 setvar("chit.roof.layout", "character,stats,gear");
 setvar("chit.stats.layout", "muscle,myst,moxie|hp,mp,axel|mcd|drip|trail,florist");
@@ -58,6 +59,7 @@ setvar("chit.walls.layout", "helpers,thrall,robo,vykea,effects,horsery,boombox")
 setvar("chit.quests.hide", false);
 setvar("chit.stats.showbars", true);
 setvar("chit.thrall.showname", false);
+setvar("chit.next.maxlen", 30);
 setvar("chit.toolbar.moods", "true"); // do not change to boolean, "bonus" is also valid
 
 /************************************************************************************
@@ -412,7 +414,7 @@ string helperLucky() {
 		if(available_amount($item[stone wool]) < 2 && get_property("lastTempleUnlock").to_int() == my_ascensions() && !($strings[step3, finished] contains get_property("questL11Worship")))
 			rewards[$location[The Hidden Temple]] = "stonewool.gif|Fight Baa'baa'bu'ran|5";
 		if(!have_outfit("Knob Goblin Elite Guard Uniform") && get_property("lastDispensaryOpen").to_int() != my_ascensions() && ($strings[step1, step2, finished] contains get_property("questL05Goblin"))
-		  && my_path() != "Way of the Surprising Fist" && my_path() != "Way of the Surprising Fist")
+		  && my_path().name != "Way of the Surprising Fist" && my_path().name != "Way of the Surprising Fist")
 			rewards[$location[Cobb's Knob Barracks]] = "elitehelm.gif|Fight KGE Guard Captain|20";
 		if($strings[started, step1] contains get_property("questL08Trapper") && item_amount(to_item(get_property("trapperOre"))) < 3)
 			rewards[$location[Itznotyerzitz Mine]] = get_property("trapperOre").to_item().image + "|1 each: asbestos, chrome, and linoleum ore|0";
@@ -871,7 +873,7 @@ buff parseBuff(string source) {
 		}
 	}
 
-	if(myBuff.eff != $effect[none] && my_path() == "G-Lover" && !($effects[Ode to Booze, Ultrahydrated] contains myBuff.eff) && myBuff.eff.to_lower_case().index_of("g") < 0)
+	if(myBuff.eff != $effect[none] && my_path().name == "G-Lover" && !($effects[Ode to Booze, Ultrahydrated] contains myBuff.eff) && myBuff.eff.to_lower_case().index_of("g") < 0)
 		style = "background-color:lightgray";
 
 	// Flavour of Magic picker!
@@ -918,6 +920,8 @@ buff parseBuff(string source) {
 		columnIcon = columnIcon.replace_string(myBuff.effectImage, "lattecup1.gif");
 		myBuff.effectImage = "lattecup1.gif";
 	}
+	else if (myBuff.effectName.contains_text("Spooky VHS Monster"))
+		effectAlias = "VHS Taped " + get_property("spookyVHSTapeMonster");
 	else if(turtleBlessings contains myBuff.eff || grandTurtleBlessings contains myBuff.eff) {
 		boolean isGrand = grandTurtleBlessings contains myBuff.eff;
 		int speedUps = 0;
@@ -1051,6 +1055,7 @@ void bakeEffects() {
 	buffer buffs;
 	buffer intrinsics;
 	buffer helpers;
+	buffer advmods;
 	int total = 0;
 	boolean [string] uniqueTypesShown;
 
@@ -1058,6 +1063,9 @@ void bakeEffects() {
 	string layout = vars["chit.effects.layout"].to_lower_case().replace_string(" ", "");
 	if (layout == "") layout = "buffs";
 	boolean showSongs = contains_text(layout,"songs");
+	if(!contains_text(layout, "advmods")) {
+		layout = "advmods," + layout;
+	}
 
 	//Load effects map
 	static {
@@ -1193,6 +1201,31 @@ void bakeEffects() {
 	intrinsics.lack_effect($skill[Mist Form], $effect[Mist Form], "Mist Form");
 	intrinsics.lack_effect($skill[Flock of Bats Form], $effect[Bats Form], "Bats Form");
 
+	if(chitSource["advmods"] != "") {
+		record noncommod {
+			string icon;
+			string desc;
+			string matchtext;
+		};
+		noncommod[int] nomcommods = {
+			new noncommod("clarabell.gif", "clara's bell", "Clara's Bell"),
+			new noncommod("jellyglob.gif", "stench jelly", "jelly all over you"),
+			new noncommod("cincho.gif", "cincho fiesta exit", "exit mode on your cincho"),
+			new noncommod("jparka2.gif", "spikolodon spike", "spikes are scaring away most monsters"),
+			new noncommod("pillminder.gif", "sneakisol", "avoiding fights until something cool happens"),
+		};
+
+		foreach i,noncom in nomcommods {
+			if(chitSource["advmods"].contains_text(noncom.matchtext)) {
+				advmods.append('<tr class="effect"><td class="icon"><img height=20 width=20 src="/images/itemimages/');
+				advmods.append(noncom.icon);
+				advmods.append('" /></td><td class="info" colspan="3">Noncom guaranteed by ');
+				advmods.append(noncom.desc);
+				advmods.append('</td></tr>');
+			}
+		}
+	}
+
 	if (length(intrinsics) > 0 ) {
 		intrinsics.insert(0, '<tbody class="intrinsics">');
 		intrinsics.append('</tbody>');
@@ -1204,6 +1237,10 @@ void bakeEffects() {
 	if (length(buffs) > 0) {
 		buffs.insert(0, '<tbody class="buffs">');
 		buffs.append('</tbody>');
+	}
+	if (length(advmods) > 0) {
+		advmods.insert(0, '<tbody class="advmods">');
+		advmods.append('</tbody>');
 	}
 
 	if (total > 0) {
@@ -1220,6 +1257,7 @@ void bakeEffects() {
 					break;
 				case "songs": result.append(songs); break;
 				case "intrinsics": result.append(intrinsics); break;
+				case "advmods": result.append(advmods); break;
 				default: //ignore all other values
 			}
 		}
@@ -1578,7 +1616,7 @@ void pickerThrall() {
 }
 
 void bakeThrall() {
-	if(my_class() != $class[Pastamancer] || my_path() == "Nuclear Autumn" || my_path() == "Pocket Familiars") return;
+	if(my_class() != $class[Pastamancer] || my_path().name == "Nuclear Autumn" || my_path().name == "Pocket Familiars") return;
 	buffer result;
 	void bake(string lvl, string name, string type, string img) {
 		if(to_boolean(vars["chit.thrall.showname"])) {
@@ -2460,6 +2498,21 @@ void addWalfordBucket(buffer result) {
 	}
 }
 
+void addSweat(buffer result) {
+	int sweat = get_property("sweat").to_int();
+	result.append('<tr>');
+	result.append('<td class="label">Sweat</td><td class="info">');
+	result.append(sweat);
+	result.append(' %</a></td>');
+	if(to_boolean(vars["chit.stats.showbars"])) {
+		result.append('<td class="progress"><div class="progressbox">');
+		result.append('<div class="progressbar" style="width:');
+		result.append(sweat);
+		result.append('%"></div></div></td>');
+	}
+	result.append('</tr>');
+}
+
 void addFantasyRealm(buffer result) {
 	// TODO: Don't display this if Rubees are an active currency (add logic to conveniently check active currencies...)
 	if(have_equipped($item[FantasyRealm G. E. M.])) {
@@ -2644,11 +2697,11 @@ void addOrgan(buffer result, string organ, boolean showBars, int current, int li
 }
 
 void addStomach(buffer result, boolean showBars) {
-	if(can_eat())
+	if(can_eat() && fullness_limit() > 0)
 		result.addOrgan("Stomach", showBars, my_fullness(), fullness_limit(), have_effect($effect[Got Milk]) > 0);
 }
 void addLiver(buffer result, boolean showBars) {
-	if(can_drink())
+	if(can_drink() && inebriety_limit() > 0)
 		result.addOrgan("Liver", showBars, my_inebriety(), inebriety_limit(), have_effect($effect[Ode to Booze]) > 0);
 }
 void addSpleen(buffer result, boolean showBars) {
@@ -2926,6 +2979,22 @@ void bakeStats() {
 		}
 	}
 
+	void addScore() {
+		// <span class='nes' style='line-height: 14px; font-size: 12px;'>1,250</span>
+		matcher score = create_matcher('<font color="?([^>"]+)"?><span class=\'nes\'[^>]*>([^<]+)</span>', stats);
+		if(find(score)) {
+			result.append('<tr style="line-height: 14px; font-size: 12px;"><td');
+			if(showBars) {
+				result.append(' colspan="2"');
+			}
+			result.append(' class="scoretext"><span class="nes">Score:</span></td><td class="scorenum"><font color="');
+			result.append(score.group(1));
+			result.append('"><span class="nes">');
+			result.append(score.group(2));
+			result.append('</span></td></tr>');
+		}
+	}
+
 	string progressTub(string s, int val) {
 		int begin;
 		switch(s) {
@@ -2976,7 +3045,7 @@ void bakeStats() {
 			if(my_hp() <= my_maxhp() * to_float(get_property("hpAutoRecovery")))
 				return "ash+restore_hp(0)";
 		} else if(p == "mp") {
-			if(my_path() == "Zombie Slayer") {
+			if(my_path().name == "Zombie Slayer") {
 				if(my_mp() <= my_maxmp() * to_float(get_property("mpAutoRecovery")))
 					return "ash+restore_hp(0)";
 			} else if(my_mp() <= my_maxmp() * to_float(get_property("mpAutoRecovery")))
@@ -3025,7 +3094,7 @@ void bakeStats() {
 			}
 			return;
 		}
-		if(my_path() == "Zombie Slayer") {
+		if(my_path().name == "Zombie Slayer") {
 			string HordeLink = get_property("baleUr_ZombieAuto") == ""? '<a href="skills.php" target="mainpane" title="Use Horde Skills">'
 				// If using Universal_recovery, add link to recover Horde
 				: '<a href="' + sideCommand("restore mp") + '" title="Restore Horde">';
@@ -3133,11 +3202,11 @@ void bakeStats() {
 		if(section.contains_stat()) {
 			switch(my_class()) {
 			case $class[Seal Clubber]:
-				if(my_path() != "Nuclear Autumn")
+				if(my_path().name != "Nuclear Autumn")
 					result.addFury();
 				break;
 			case $class[Sauceror]:
-				if(my_path() != "Nuclear Autumn")
+				if(my_path().name != "Nuclear Autumn")
 					result.addSauce();
 				break;
 			case $class[Avatar of Sneaky Pete]:
@@ -3154,7 +3223,7 @@ void bakeStats() {
 				break;
 			}
 
-			switch(my_path()) {
+			switch(my_path().name) {
 			case "Heavy Rains":
 				result.addHeavyRains();
 				break;
@@ -3183,6 +3252,9 @@ void bakeStats() {
 
 			if(available_amount($item[sprinkles]) > 0)
 				result.addSprinkles();
+
+			if(equipped_amount($item[designer sweatpants]) > 0)
+				result.addSweat();
 
 			// Quest updates should be shown if the tracker brick is not in use.
 			boolean tracker;
@@ -3234,6 +3306,7 @@ void bakeStats() {
 				addAxel();
 			addBathtub();
 			addExtreme();
+			addScore();
 			checkExtra = false;
 		}
 	}
@@ -3302,7 +3375,7 @@ void allCurrency(buffer result) {
 				return constructLink("Fiddle with your genes", "shop.php?whichshop=mutate");
 			case $item[source essence]:
 				string termlink = 'campground.php?action=terminal';
-				if(my_path() == "Nuclear Autumn")
+				if(my_path().name == "Nuclear Autumn")
 					termlink = 'place.php?whichplace=falloutshelter&action=vault_term';
 				return constructLink("Boot up the Source Terminal", termlink);
 			case $item[BACON]:
@@ -3520,7 +3593,7 @@ void pickOutfit() {
 	}
 
 	// In KOLHS, might want to remove hat
-	if(my_path() == "KOLHS") {
+	if(my_path().name == "KOLHS") {
 		if(equipped_item($slot[hat]) != $item[none])
 			special.addGear("unequip hat; set _hatBeforeKolhs = "+equipped_item($slot[hat]), "Remove Hat for School");
 		else if(get_property("_hatBeforeKolhs") != "")
@@ -3579,7 +3652,7 @@ void bakeCharacter() {
 	//Title
 	string myTitle() {
 		string myTitle = my_class();
-		if(vars["chit.character.title"] == "true" && my_path() != "Actually Ed the Undying") {
+		if(vars["chit.character.title"] == "true" && my_path().name != "Actually Ed the Undying") {
 			matcher titleMatcher = create_matcher("<br>(.*?)<br>(.*?)<", source);
 			if(find(titleMatcher)) {
 				myTitle = group(titleMatcher, 2);
@@ -3600,7 +3673,7 @@ void bakeCharacter() {
 	//Avatar
 	string myAvatar;
 	if(vars["chit.character.avatar"] != "false") {
-		if(my_path() != "You, Robot") {
+		if(my_path().name != "You, Robot") {
 			matcher avatarMatcher = create_matcher('<table align=center><tr><td>(.*?)<a class=\'([^\']+).+?("><div.+?</a>)', source);
 			if(avatarMatcher.find())
 				myAvatar = avatarMatcher.group(1) + '<a href="#" rel="chit_pickeroutfit" title="Select Outfit" class="chit_launcher ' + avatarMatcher.group(2) + avatarMatcher.group(3);
@@ -3641,7 +3714,7 @@ void bakeCharacter() {
 	}
 
 	string myGuild() {
-		switch(my_path()) {
+		switch(my_path().name) {
 			case "Nuclear Autumn": return "shop.php?whichshop=mutate";
 			case "Pocket Familiars": return "shop.php?whichshop=pokefam";
 			case "You, Robot": return "campground.php";
@@ -3695,7 +3768,7 @@ void bakeCharacter() {
 	string myPath() {
 		if(get_property("kingLiberated") == "true")
 			return "No Restrictions";
-		switch(my_path()) {
+		switch(my_path().name) {
 		case "None": return "No Path";
 		case "Bees Hate You":
 			int bees = 0;
@@ -3724,7 +3797,7 @@ void bakeCharacter() {
 		case "G-Lover": return "<a target='mainpane' style='font-weight:normal;' href='shop.php?whichshop=glover'>G-Lover</a>";
 		case "Wildfire": return '<a target="mainpane" style="font-weight:normal;" href="place.php?whichplace=wildfire_camp">Wildfire</a>';
 		}
-		return my_path();
+		return my_path().name;
 	}
 
 	//Stat Progress
@@ -3741,7 +3814,7 @@ void bakeCharacter() {
 	//Level + Council
 	string councilStyle = "";
 	string councilText = "Visit the Council";
-	if(to_int(get_property("lastCouncilVisit")) < my_level() && my_path() != "Community Service" && get_property("kingLiberated") == "false") {
+	if(to_int(get_property("lastCouncilVisit")) < my_level() && my_path().name != "Community Service" && get_property("kingLiberated") == "false") {
 		councilStyle = 'background-color:#F0F060';
 		councilText = "The Council wants to see you urgently";
 	}
@@ -3774,7 +3847,7 @@ void bakeCharacter() {
 	result.append('<tr>');
 	if(myAvatar != "") {
 		result.append('<td rowspan="4" class="avatar');
-		if(my_path() == "You, Robot") result.append(' avatarRobo');
+		if(my_path().name == "You, Robot") result.append(' avatarRobo');
 		result.append('">');
 		result.append(myAvatar);
 		result.append('</td>');
@@ -3891,7 +3964,7 @@ void bakeQuests() {
 
 	// See if we need to add any quest data for Bugbears
 	string bugbears;
-	if(my_path() == "Bugbear Invasion") {
+	if(my_path().name == "Bugbear Invasion") {
 		if(item_amount($item[key-o-tron]) > 0) {
 			foreach i,b in biodata if(get_property(b.prop).is_integer())
 				bugbears += '<br>&nbsp;&nbsp;&nbsp;* '+ b.loc +': ' + get_property(b.prop).to_int() + '/'+ b.data;
@@ -4109,6 +4182,12 @@ boolean parsePage(buffer original) {
 		source = parse.replace_first("");
 	}
 
+	parse = create_matcher('<p><b><font size=2>Adventure Modifiers:</font></b><br>(.*?)<p>', source);
+	if(find(parse)) {
+		chitSource["advmods"] = parse.group(1);
+		// don't strip out advmods from source out of an abundance of caution
+	}
+
 	// Parse the beginning of the page
 	parse = create_matcher("(^.+?)(<center id='rollover'.+?</center>)(.*?)(<table align=center><tr><td align=right>Muscle:.*?)((?:<Center>Extreme Meter:|<img src=).*?</table>(?:.*?axelottal.*?</table>)?)", source);
 	if(find(parse)) {
@@ -4211,7 +4290,7 @@ boolean parsePage(buffer original) {
 	} else return vprint("CHIT: Error Parsing Refresh", "red", -1);
 
 	// Gelatinous Noob
-	if(my_path() == "Gelatinous Noob" && find(parse = create_matcher('<span class=small><b>Absorptions:.+?</script><br>', source))) {
+	if(my_path().name == "Gelatinous Noob" && find(parse = create_matcher('<span class=small><b>Absorptions:.+?</script><br>', source))) {
 		chitSource["gelNoob"] = parse.group(0);
 		source = parse.replace_first("");
 	}
@@ -4390,6 +4469,7 @@ void bakeBricks() {
 						case "horsery":		bakeHorsery();		break;
 						case "boombox":		bakeBoombox();		break;
 						case "robo":		bakeRobo();			break;
+						case "next": bakeNext(); break;
 
 						// Reserved words
 						case "helpers": case "update": break;
@@ -4478,7 +4558,7 @@ float starCount(string[int] styleInfos) {
 		}
 		return 1;
 	}
-	
+
 	float total = 0;
 	foreach i,s in styleInfos {
 		total += starCountHelper(s);
@@ -4509,7 +4589,7 @@ string stylize(string styleInfo, int total_stars) {
 	}
 	if(style == "")
 		style = "width:" + (100.0 * max(num,1)/total_stars) +"%;";
-	
+
 	return 'style="' + style + '"';
 }
 
@@ -4518,11 +4598,11 @@ buffer addGroup(string[int] rowHTMLs, string className) {
 	buffer buff;
 	if(className != "")
 		append(buff, '<div class="'+className+'">');
-		
+
 	foreach i,s in rowHTMLs {
 		append(buff, s);
 	}
-	
+
 	if(className != "")
 		append(buff, '</div>');
 
@@ -4548,7 +4628,7 @@ buffer addBricks(string layout) {
 	//parses a chit.__.layout string and adds bricks in appropriate rows and columns,
 	//with user-specified widths for the various bricks and groups of bricks
 	//uses multi-dimensional arrays for tracking arrays at different parenthesis depth.
-		buffer result; 
+		buffer result;
 		string[int,int] bricks;
 		string[int,int] rowHTML;
 		string[int,int] styleInfo;
@@ -4589,6 +4669,7 @@ buffer addBricks(string layout) {
 						j[pLevel] = 0;
 						bricks[pLevel] = {};
 						styleInfo[pLevel] = {};
+						rowHTML[pLevel] = {};
 						break;
 					case ")":
 					//vertical group complete. Add it to the list of bricks in the previous parenthesis depth and continue there.
@@ -4598,6 +4679,7 @@ buffer addBricks(string layout) {
 						j[pLevel] = 0;
 						bricks[pLevel] = {};
 						styleInfo[pLevel] = {};
+						rowHTML[pLevel] = {};
 						pLevel--;
 						break;
 					case "}":
@@ -4637,7 +4719,7 @@ buffer addBricks(string layout) {
 		result.append(addGroup(rowHTML[pLevel],"brick_row"));
 		return result;
 	}
-	
+
 //receive chit.__.layout string, tokenize it, and send it for processing.
 	string[int] tokens = tokenize(layout, $strings[\,,|,(,),:,{,}]);
 	return addBricksHelper(tokens);
@@ -4783,7 +4865,8 @@ buffer modifyPage(buffer source) {
 
 	// handle limit modes
 	switch(limit_mode()) {
-	case "":			// Mode is not limited
+	case "": // old way of indicating mode is not limited, just in case it reverts or something
+	case "0":			// Mode is not limited
 	case "edunder":		// Ed's Underworld
 		break;
 	case "spelunky":	// Needs special handling for the Spelunkin' minigame

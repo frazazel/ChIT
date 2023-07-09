@@ -10,7 +10,7 @@ record source_skill {
 boolean [string] chips;
 
 source_skill getSourceSkill(string edu) {
-	boolean isSource = my_path() == "The Source";
+	boolean isSource = my_path().name == "The Source";
 	
 	source_skill sskill;
 	switch(edu) {
@@ -158,7 +158,7 @@ void addSourceSkillDisplay(buffer result, string edu, int i) {
 }
 
 void term_link(buffer result) {
-	if(my_path() == "Nuclear Autumn")
+	if(my_path().name == "Nuclear Autumn")
 		result.append('place.php?whichplace=falloutshelter&action=vault_term');
 	else
 		result.append('campground.php?action=terminal');
@@ -167,7 +167,8 @@ void term_link(buffer result) {
 // Part of terminal block that can be included in stats for a smaller footprint
 void addTerminal(buffer result) {
 	// Nothing to do if you don't have the terminal
-	if(get_campground() contains $item[Source terminal] && is_unrestricted($item[Source terminal])) {
+	if((get_campground() contains $item[Source terminal] && is_unrestricted($item[Source terminal]))
+		|| get_campground() contains $item[replica Source terminal]) {
 		foreach i,chip in split_string(get_property("sourceTerminalChips"), ",")
 			chips[chip] = true;
 		

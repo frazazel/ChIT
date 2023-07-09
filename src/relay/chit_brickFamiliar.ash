@@ -163,7 +163,7 @@ void pickerFamiliarGear(familiar myfam, item famitem, boolean isFed) {
 	}
 
 	string sadMessage(string it, string fam) {
-		string famname = my_path() == "Avatar of Boris"? "Clancy": myfam.name;
+		string famname = my_path().name == "Avatar of Boris"? "Clancy": myfam.name;
 		return "You don't have any " + it + " for your " + fam + ".<br><br>Poor " + famname + ".";
 	}
 
@@ -384,6 +384,14 @@ void pickerFamiliarGear(familiar myfam, item famitem, boolean isFed) {
 		}
 	}
 
+	if(available_amount($item[tiny stillsuit]) > 0) {
+		picker.append('<tr class="pickitem">');
+		picker.append('<td class="action" colspan="2">');
+		picker.append('<a class="done" target="mainpane" href="inventory.php?action=distill&pwd=' + my_hash() + '">');
+		picker.append("Check Tiny Stillsuit");
+		picker.append('</a></td></tr>');
+	}
+
 	//Bugged Bugbear (Get free equipment from Arena)
 	if(myfam == $familiar[Baby Bugged Bugbear] && (available_amount($item[bugged beanie]) + available_amount($item[bugged balaclava]) + available_amount($item[bugged b&Atilde;&para;n&plusmn;&Atilde;&copy;t])) == 0)
 		picker.append('<tr class="pickitem"><td class="action" colspan="2"><a class="done" target="mainpane" href="arena.php">Visit the Arena</a></tr>');
@@ -430,7 +438,7 @@ void pickerFamiliarGear(familiar myfam, item famitem, boolean isFed) {
 			picker.addSadFace(myfam.name + " is too incorporeal for equipment.<br><br>Poor " + myfam.name + ".");
 			break;
 		case $familiar[none]:
-			if(my_path() == "Avatar of Boris") {
+			if(my_path().name == "Avatar of Boris") {
 				picker.addLoader("Changing Instrument...");
 				pickClancy();
 				if(item_amount($item[Clancy's lute]) + item_amount($item[Clancy's crumhorn]) == 0)
@@ -462,6 +470,7 @@ int hasBjornDrops(familiar f) {
 		case $familiar[twitching space critter]: return checkDrops("_spaceFurDropsCrown",1);
 		case $familiar[Machine Elf]: return checkDrops("_abstractionDropsCrown",25);
 		case $familiar[Adventurous Spelunker]: return checkDrops("_oreDropsCrown",6);
+		case $familiar[Puck Man]: case $familiar[Ms. Puck Man]: return checkDrops("_yellowPixelDropsCrown", 25);
 	}
 
 	return 0;
@@ -472,7 +481,9 @@ int locketFightsRemaining();
 // TODO: Move this function to chit_brickGear.ash
 int hasDrops(item it) {
 	switch(it) {
-		case $item[V for Vivala mask]: return 10 - to_int(get_property("_vmaskAdv"));
+		case $item[V for Vivala mask]:
+		case $item[replica V for Vivala mask]:
+			return 10 - to_int(get_property("_vmaskAdv"));
 		case $item[mayfly bait necklace]: return 30 - to_int(get_property("_mayflySummons"));
 		case $item[buddy bjorn]: return hasBjornDrops(my_bjorned_familiar());
 		case $item[crown of thrones]: return hasBjornDrops(my_enthroned_familiar());
@@ -488,6 +499,7 @@ int hasDrops(item it) {
 				return 1;
 			break;
 		case $item[Greatest American Pants]:
+		case $item[replica Greatest American Pants]:
 			if(get_property("_gapBuffs").to_int() < 5)
 				return 1;
 			// intentional fallthrough
@@ -542,10 +554,12 @@ int hasDrops(item it) {
 		case $item[Lil' Doctor&trade; bag]:
 			return 9 - get_property("_otoscopeUsed").to_int() - get_property("_reflexHammerUsed").to_int() - get_property("_chestXRayUsed").to_int();
 		case $item[Fourth of May Cosplay Saber]:
+		case $item[replica Fourth of May Cosplay Saber]:
 			return 5 - get_property("_saberForceUses").to_int();
 		case $item[Beach Comb]:
 			return 11 - get_property("_freeBeachWalksUsed").to_int();
 		case $item[Powerful Glove]:
+		case $item[replica Powerful Glove]:
 			return 100 - get_property("_powerfulGloveBatteryPowerUsed").to_int();
 		case $item[Eight Days a Week Pill Keeper]:
 			int uses = (spleen_limit() - my_spleen_use()) / 3;
@@ -555,13 +569,15 @@ int hasDrops(item it) {
 			int transformsLeft = 10 - get_property("_vampyreCloakeFormUses").to_int();
 			return transformsLeft;
 		case $item[Cargo Cultist Shorts]:
+		case $item[replica Cargo Cultist Shorts]:
 			return get_property("_cargoPocketEmptied").to_boolean() ? 0 : 1;
 		case $item[backup camera]:
 			// 5 extra uses in You, Robot
-			return (my_path_id() == 41 ? 16 : 11) - get_property("_backUpUses").to_int();
+			return (my_path().id == 41 ? 16 : 11) - get_property("_backUpUses").to_int();
 		case $item[familiar scrapbook]:
 			return get_property("scrapbookCharges").to_int() / 100;
 		case $item[industrial fire extinguisher]:
+		case $item[replica industrial fire extinguisher]:
 			return get_property("_fireExtinguisherCharge").to_int();
 		case $item[Daylight Shavings Helmet]:
 			foreach beard in $effects[Spectacle Moustache, Toiletbrush Moustache, Barbell Moustache, Grizzly Beard, Surrealist's Moustache, Musician's Musician's Moustache, Gull-Wing Moustache, Space Warlord's Beard, Pointy Wizard Beard, Cowboy Stache, Friendly Chops] {
@@ -575,6 +591,22 @@ int hasDrops(item it) {
 			break;
 		case $item[combat lover's locket]:
 			return locketFightsRemaining();
+		case $item[June cleaver]:
+			return (get_property("_juneCleaverFightsLeft").to_int() == 0) ? 1 : 0;
+		case $item[designer sweatpants]:
+		case $item[replica designer sweatpants]:
+			int sweatboozeleft = 3 - get_property("_sweatOutSomeBoozeUsed").to_int();
+			return max(sweatboozeleft, 0);
+		case $item[cursed monkey's paw]:
+			if(get_property("_monkeyPawWishesUsed").to_int() < 5) {
+				return 1;
+			}
+			break;
+		case $item[Cincho de Mayo]:
+		case $item[replica Cincho de Mayo]:
+			int cinch = 100 - get_property("_cinchUsed").to_int();
+			if(cinch > 0) return 1;
+			break;
 	}
 
 	return 0;
@@ -640,6 +672,22 @@ string item_image(item it, int modify_image)
 					default:
 						print("Invalid umbrellaState " + get_property("umbrellaState") + "???", "red");
 						break;
+				}
+				break;
+			case $item[Jurassic Parka]:
+			case $item[replica Jurassic Parka]:
+				switch(get_property("parkaMode")) {
+					case "kachungasaur": return "/images/itemimages/jparka8.gif";
+					case "dilophosaur": return "/images/itemimages/jparka3.gif";
+					case "spikolodon": return "/images/itemimages/jparka2.gif";
+					case "ghostasaurus": return "/images/itemimages/jparka1.gif";
+					case "pterodactyl": return "/images/itemimages/jparka9.gif";
+				}
+				break;
+			case $item[cursed monkey's paw]:
+				int wishesUsed = get_property("_monkeyPawWishesUsed").to_int();
+				if(wishesUsed >= 0 && wishesUsed <= 5) {
+					return "/images/itemimages/monkeypaw" + wishesUsed + ".gif";
 				}
 				break;
 		}
@@ -746,7 +794,7 @@ int iconInfoSpecial(familiar f, buffer iconInfo) {
 			if(statsLeft != 1)
 				iconInfo.append("s");
 			// The stats are nice, but they don't warrant highlighting outside of The Source, where they're super important.
-			if(my_path() == "The Source")
+			if(my_path().name == "The Source")
 				return STATUS_HASDROPS;
 			else
 				return STATUS_NORMAL;
@@ -949,7 +997,7 @@ boolean isWeirdo(familiar f) {
 
 // isBjorn also applies for the crown, just for the sake of a shorter name
 void addFamiliarIcon(buffer result, familiar f, boolean isBjorn, boolean title, string reason) {
-	boolean pokeFam = (my_path() == "Pocket Familiars");
+	boolean pokeFam = (my_path().name == "Pocket Familiars");
 	familiar is100 = $familiar[none];
 	if(!isBjorn)
 		is100 = to_familiar(to_int(get_property("singleFamiliarRun")));
@@ -1734,7 +1782,7 @@ void pickerSnapper() {
 void bakeFamiliar() {
 
 	// Special Challenge Path Familiar-ish things
-	switch(my_path()) {
+	switch(my_path().name) {
 	case "Avatar of Boris": FamBoris(); return;
 	case "Avatar of Jarlsberg": FamJarlsberg(); return;
 	case "Avatar of Sneaky Pete": FamPete(); return;
@@ -1760,6 +1808,7 @@ void bakeFamiliar() {
 	boolean isFed = source.contains_text('</a></b>, the <i>extremely</i> well-fed <b>');
 	string weight_title = "Buffed Weight";
 	string name_followup = "";
+	string mummingicon = "";
 
 	familiar myfam = my_familiar();
 	item famitem = $item[none];
@@ -1772,7 +1821,7 @@ void bakeFamiliar() {
 		// Put the mumming trunk icon before the familiar type name
 		matcher mummingmatcher = create_matcher('<a target="mainpane" href="/inv_use\\.php\\?whichitem=9592.*?</a>', source); #"
 		if(find(mummingmatcher))
-			famtype = group(mummingmatcher) + " " + famtype;
+			mummingicon = group(mummingmatcher);
 	}
 
 	//Get Familiar Name
@@ -2109,6 +2158,24 @@ void bakeFamiliar() {
 		boolean candyBagDropped = get_property("_bagOfCandy").to_boolean();
 		info += candyBagDropped ? "bag dropped today" : "can drop bag today";
 		break;
+	case $familiar[grey goose]:
+		int famweight = familiar_weight(myfam);
+		info += famweight + "lb";
+		if(famweight > 1) info += "s";
+		int target = max(famweight + 1, 6);
+		if(famweight < 20) {
+			int expToGo = target**2 - myfam.experience;
+			int combats = ceil(expToGo / (numeric_modifier("Familiar Experience") + 1));
+			info += ", " +  expToGo + " exp";
+			if(combats != expToGo) {
+				info += ' <span title="gaining '
+				+ floor(numeric_modifier("Familiar Experience")) + ' fam exp per combat">(' + combats
+				+ " fight" + (combats > 1 ? "s" : "") + ")</span>";
+			}
+			info += " to " + target + "lb";
+			if(target > 1) info += "s";
+		}
+		break;
 	}
 
 	//Get equipment info
@@ -2201,14 +2268,16 @@ void bakeFamiliar() {
 	} else {
 		result.append('<tr>');
 	}
-	result.append('<th width="40" title="'+ weight_title +'" style="color:blue">' + famweight + '</th>');
+	result.append('<th width="40">');
+	result.append(mummingicon);
+	result.append('</th><th><span title="'+ weight_title +'" style="color:blue">' + famweight + ' lb </span>');
 
 	if (protect) {
-		result.append('<th title="' + hover + '">' + famname);
+		result.append('<span title="' + hover + '">' + famtype);
 	} else {
-		result.append('<th><a target=mainpane href="familiar.php" class="familiarpick" title="' + hover + '">' + famname + '</a>');
+		result.append('<span><a target=mainpane href="familiar.php" class="familiarpick" title="' + hover + '">' + famtype + '</a>');
 	}
-	result.append(name_followup + '</th>');
+	result.append(name_followup + '</span></th>');
 	if (charges == "") {
 		result.append('<th width="30">&nbsp;</th>');
 	} else {
@@ -2226,7 +2295,7 @@ void bakeFamiliar() {
 		result.append('</a>');
 	}
 	result.append('</td>');
-	result.append('<td class="info" style="' + famstyle + '"><a title="Familiar Haiku" class="hand" onclick="fam(' + to_int(myfam) + ')" origin-level="third-party"/>' + famtype + '</a>' + info + '</td>');
+	result.append('<td class="info" style="' + famstyle + '"><a title="Familiar Haiku" class="hand" onclick="fam(' + to_int(myfam) + ')" origin-level="third-party"/>' + famname + '</a>' + info + '</td>');
 	if (myfam == $familiar[none]) {
 		result.append('<td class="icon">');
 		result.append('</td>');
