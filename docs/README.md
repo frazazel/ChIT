@@ -7,7 +7,7 @@ Character Info Toolbox (ChIT for short) is a character pane relay override scrip
 Run this command in the graphical CLI:
 
 ```
-git checkout https://github.com/Loathing-Associates-Scripting-Society/ChIT.git
+git checkout https://github.com/loathers/ChIT.git
 ```
 
 Will require [a recent build of KoLMafia](https://ci.kolmafia.us/job/Kolmafia/lastSuccessfulBuild/).
@@ -265,6 +265,7 @@ The following preferences further refine the content and appearance of individua
   - With this set to false, only quest items without G's will be recommended
   - Default: false
 - chit.gear.lattereminder: Whether to warn when not using latte and a latte unlock is available
+- chit.gear.ccswordcanereminder: Whether to warn when not using candy cane sword cane and an important use is available
 
   - With this set to true, if you are adventuring in a zone where a latte unlock can be acquired that you have no acquired yet (and you have a latte) all other off-hands will be highlighted in orange, except for important offhands like the UV-resistant compass and the unstable fulminate.
   - Default: true

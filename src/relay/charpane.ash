@@ -1,6 +1,8 @@
 script "Character Information Toolbox";
-since r27373; // replica iotms (including folder holder)
+since r27997; // Roman Candelabra
 import "chit_global.ash";
+import "chit_itemInfo.ash";
+import "chit_familiarInfo.ash";
 import "chit_brickFamiliar.ash"; // This has to be before chit_brickGear due to addItemIcon() and... weirdly enough pickerFamiliar()
 import "chit_brickGear.ash";
 import "chit_brickTracker.ash";
@@ -44,6 +46,7 @@ setvar("chit.gear.layout", "default");
 setvar("chit.gear.favorites", "item", "");
 setvar("chit.gear.ignoreG-Lover", false);
 setvar("chit.gear.lattereminder", true);
+setvar("chit.gear.ccswordcanereminder", true);
 setvar("chit.helpers.dancecard", true);
 setvar("chit.helpers.lucky", true);
 setvar("chit.helpers.spookyraven", true);
@@ -619,13 +622,11 @@ void pickerFlavour() {
 	buffer picker;
 	picker.pickerStart("flavour", "Cast Flavour of Magic");
 
-	picker.addLoader("Spiriting flavours...");
 	picker.append('<tr class="pickitem"><td>');
 	picker.addElementMap("elementchart2");
 	picker.append('</td></tr>');
 
-	picker.append('</table></div>');
-	chitPickers["flavour"] = picker;
+	picker.pickerFinish("Spiriting flavours...");
 }
 
 boolean isDriving() {
@@ -638,71 +639,116 @@ boolean isDriving() {
 }
 
 void pickerAsdon() {
-	if(chitPickers["asdon"] != "") {
+	if(chitPickers contains "asdon") {
 		return;
 	}
 
 	buffer picker;
 	picker.pickerStart("asdon", "Drive Differently! (" + get_fuel() + " fuel)");
-	picker.addLoader("Adjusting driving style...");
 
 	void addDriving(effect style) {
 		boolean current = have_effect(style) > 0;
 		boolean canDo = !current && get_fuel() >= 37;
 		string name = style.to_string().split_string(" ")[1];
-		string driveLink = '<a class="change" href="' + sideCommand("asdonmartin drive " + name.to_lower_case()) + '">';
-
-		picker.append('<tr class="pickitem');
-		if(!canDo) picker.append(' currentitem');
-		picker.append('"><td class="icon">');
-		if(canDo) picker.append(driveLink);
-		picker.append('<img class="chit_icon" src="/images/itemimages/');
-		picker.append(style.image);
-		picker.append('" title="');
-		picker.append(style.to_string());
-		picker.append('" />');
-		if(canDo) picker.append('</a>');
-		picker.append('</td><td colspan="2">');
 		if(current) {
-			picker.append('<b>Currently Driving</b> ');
+			name = '<b>Currently Driving</b> ' + name;
 		}
-		else {
-			if(canDo) picker.append(driveLink);
-			picker.append('<b>Drive</b> ');
-		}
-		picker.append(name);
-		picker.append('<br /><span class="descline">');
-		if(style == $effect[Driving Wastefully]) picker.append("Oil Peak pressure reduction");
-		else picker.append(parseEff(style));
-		picker.append('</span>');
-		if(canDo) picker.append('</a>');
-		picker.append('</td></tr>');
+
+		picker.pickerEffectOption('Drive', name, style, '', 30,
+			sideCommand('asdonmartin drive ' + name.to_lower_case()), canDo);
 	}
 
 	foreach eff in $effects[Driving Obnoxiously, Driving Stealthily, Driving Wastefully, Driving Safely, Driving Recklessly, Driving Intimidatingly, Driving Quickly, Driving Observantly, Driving Waterproofly] {
 		addDriving(eff);
 	}
 
-	string workshedLink = '<a class="change visit done" href="campground.php?action=workshed" target="mainpane">';
-	picker.append('<tr class="pickitem"><td class-"icon">');
-	picker.append(workshedLink);
-	picker.append('<img class="chit_icon" src="/images/itemimages/');
-	picker.append($item[Asdon Martin keyfob].image);
-	picker.append('" title="Visit your workshed" /></a></td><td colspan="2">');
-	picker.append(workshedLink);
-	picker.append('<b>Visit</b> your workshed</a></td></tr>');
+	picker.pickerGenericOption('Visit', 'your workshed', '', '', 'campground.php?action=workshed',
+		true, itemimage($item[Asdon Martin keyfob (on ring)].image), attrmap {}, attrmap {
+			'class': 'change visit done',
+			'target': 'mainpane',
+		}
+	);
 
 	if(isDriving()) {
-		string stopLink = '<a class="change" href="' + sideCommand("asdonmartin drive clear") + '">';
-		picker.append('<tr class="pickitem"><td class="icon">');
-		picker.append(stopLink);
-		picker.append('<img class="chit_icon" src="/images/itemimages/antianti.gif" title="Stop driving" /></a></td><td colspan="2">');
-		picker.append(stopLink);
-		picker.append('<b>Stop</b> Driving</a></td></tr>');
+		picker.pickerGenericOption('Stop', 'driving', '', '', sideCommand('asdonmartin drive clear'),
+			true, itemimage('antianti.gif'), attrmap {}, attrmap {
+				'class': 'change',
+			}
+		);
 	}
 
-	picker.append('</table></div>');
-	chitPickers["asdon"] = picker;
+	picker.pickerFinish("Adjusting driving style...");
+}
+
+void pickerHoloRecord() {
+	if(chitPickers contains "holorecord") {
+		return;
+	}
+
+	effect nowPlaying = $effect[none];
+	foreach eff in $effects[
+		Power\, Man,
+		Shrieking Weasel,
+		Superdrifting,
+		Drunk and Avuncular,
+		Ministrations in the Dark,
+		Lucky Struck,
+		Record Hunger,
+	] {
+		if(have_effect(eff) > 0) {
+			nowPlaying = eff;
+			break;
+		}
+	}
+
+	buffer picker;
+	picker.pickerStart("holorecord", "Play some tunes on your Wrist-Boy");
+
+	void addRecord(item holorecord) {
+		effect eff = effect_modifier(holorecord, "effect");
+		int price = npc_price(holorecord);
+		boolean active = have_effect(eff) > 0;
+		int copies = item_amount(holorecord);
+		boolean canDo = (price > 0 && my_meat() >= price) || copies > 0;
+		string name = holorecord;
+		string desc = holorecord == $item[The Pigs holo-record] ? 'Food gives +100% more Adventures'
+			: holorecord == $item[Drunk Uncles holo-record] ? 'Booze gives +100% more Adventures'
+			: parseEff(eff);
+		if(!canDo) {
+			if(price == 0) {
+				desc += '<br />Not Unlocked';
+			}
+			else if(price > my_meat()) {
+				desc += '<br />Can\'t Afford';
+			}
+		}
+		else if(copies > 0) {
+			desc += '<br />' + copies + (copies > 1 ? ' copies' : ' copy');
+		}
+		else {
+			desc += '<br />' + price + ' meat';
+		}
+		string cmd = 'use 1 ' + holorecord;
+		if(nowPlaying != $effect[none]) {
+			cmd = 'shrug ' + nowPlaying + '; ' + cmd;
+		}
+
+		picker.pickerEffectOption(active ? 'Extend' : 'Play', name, eff, desc, canDo ? 10 : 0, sideCommand(cmd), canDo);
+	}
+
+	foreach holorecord in $items[
+		Power-Guy 2000 holo-record,
+		Shrieking Weasel holo-record,
+		Superdrifter holo-record,
+		EMD holo-record,
+		Lucky Strikes holo-record,
+		The Pigs holo-record,
+		Drunk Uncles holo-record,
+	] {
+		addRecord(holorecord);
+	}
+
+	picker.pickerFinish("Putting in the new record...");
 }
 
 effect [int] availableExpressions() {
@@ -722,13 +768,12 @@ effect [int] availableExpressions() {
 }
 
 void pickerExpression() {
-	if(chitPickers["expression"] != "") {
+	if(chitPickers contains "expression") {
 		return;
 	}
 
 	buffer picker;
 	picker.pickerStart("expression", "Express Yourself!");
-	picker.addLoader("Expressing Yourself...");
 
 	void addExpression(effect expression) {
 		boolean current = have_effect(expression) > 0;
@@ -759,8 +804,7 @@ void pickerExpression() {
 		addExpression(expression);
 	}
 
-	picker.append('</table></div>');
-	chitPickers["expression"] = picker;
+	picker.pickerFinish("Expressing Yourself...");
 }
 
 buff parseBuff(string source) {
@@ -771,8 +815,9 @@ buff parseBuff(string source) {
 
 	string columnIcon, columnTurns, columnArrow;
 	string spoiler, style, desc;
+	boolean isToday = false;
 
-	matcher parse = create_matcher('(?:<td[^>]*>(.*?)</td>)?<td[^>]*>(<.*?itemimages/([^"]*)"(?:.*?eff\\("([^"]+)"\\))?.*?)</td><td[^>]*>[^>]*>(.*?) +(?:<span[^>]*>)?\\((?:(.*?), )?((?:<a[^>]*>)?([\\d,]+||&infin;)(?:</a>)?)\\)(?:(?:</span>)?(?:</font>)?&nbsp;(<a.*?</a>))?.*?</td>', source);
+	matcher parse = create_matcher('(?:<td[^>]*>(.*?)</td>)?<td[^>]*>(<.*?itemimages/([^"]*)"(?:.*?eff\\("([^"]+)"\\))?.*?)</td><td[^>]*>[^>]*>(.*?) +(?:<span[^>]*>)?\\((?:(.*?), )?((?:<a[^>]*>)?([\\d,]+||&infin;|Today)(?:</a>)?)\\)(?:(?:</span>)?(?:</font>)?&nbsp;(<a.*?</a>))?.*?</td>', source);
 	// The ? stuff at the end is because those arrows are a mafia option that might not be present
 	if(parse.find()) {
 		columnIcon = parse.group(2);	// This is full html for the icon
@@ -788,7 +833,7 @@ buff parseBuff(string source) {
 			columnTurns = '<a target="mainpane" href="/place.php?whichplace=junggate_3&action=mystic_face" title="This... This isn\'t me.">'+parse.group(8)+'</a>';
 		else
 			columnTurns = parse.group(7).replace_string('title="Use a remedy to remove', 'title="SGEEAs Left: '+ item_amount($item[soft green echo eyedrop antidote]) +'\nUse a remedy to remove');
-		if(parse.group(8) == "&infin;") {	// Is it intrinsic?
+		if(parse.group(8) == "&infin;" || parse.group(8) == "Today") {	// Is it intrinsic?
 			myBuff.effectTurns = -1;
 			myBuff.isIntrinsic = true;
 			void turnOff(effect toDisable, skill toUse) {
@@ -799,6 +844,12 @@ buff parseBuff(string source) {
 			turnOff($effect[Wolf Form], $skill[Wolf Form]);
 			turnOff($effect[Mist Form], $skill[Mist Form]);
 			turnOff($effect[Bats Form], $skill[Flock of Bats Form]);
+			if(parse.group(8) == "Today") {
+				isToday = true;
+				if(myBuff.effectName == "Citizen of a Zone") {
+					myBuff.effectName = "Citizen of " + get_property("_citizenZone");
+				}
+			}
 		} else
 			myBuff.effectTurns = parse.group(8).to_int();
 		// There are various problems with KoL's native uparrows. Only use them if KoL's uparrows are missing
@@ -991,6 +1042,11 @@ buff parseBuff(string source) {
 		result.append('<a class="chit_launcher done" rel="chit_pickerasdon" href="#">');
 		linkStarted = true;
 	}
+	else if(myBuff.effectType == "holorecord" && available_amount($item[Wrist-Boy]) > 0) {
+		pickerHoloRecord();
+		result.append('<a class="chit_launcher done" rel="chit_pickerholorecord" href="#">');
+		linkStarted = true;
+	}
 	else if(myBuff.eff.to_skill().expression) {
 		pickerExpression();
 		result.append('<a class="chit_launcher done" rel="chit_pickerexpression" href="#">');
@@ -1018,7 +1074,11 @@ buff parseBuff(string source) {
 	}
 	result.append('</td>');
 	if(myBuff.isIntrinsic) {
-		result.append('<td class="infinity');
+		result.append('<td class="');
+		if(isToday)
+			result.append('today');
+		else
+			result.append('infinity');
 		if(!doArrows)
 			result.append(' right');
 		result.append('">');
@@ -1087,7 +1147,8 @@ void bakeEffects() {
 			intrinsics.append(currentBuff.effectHTML);
 		} else if (showSongs && $strings[at, aob, aoj] contains currentBuff.effectType) {
 			songs.append(currentBuff.effectHTML);
-		} else if(showSongs && (to_skill(currentBuff.effectName).expression || $strings[awol, asdon] contains currentBuff.effectType) && have_effect(currentBuff.eff) > 0) {
+		} else if(showSongs && (to_skill(currentBuff.effectName).expression || $strings[awol, asdon,
+		holorecord] contains currentBuff.effectType) && have_effect(currentBuff.eff) > 0) {
 			uniqueTypesShown[currentBuff.effectType] = true;
 			uniques.append('<tbody class="buffs">');
 			uniques.append(currentBuff.effectHTML);
@@ -1111,15 +1172,26 @@ void bakeEffects() {
 		}
 	}
 
-	if(!uniqueTypesShown["asdon"] && !isDriving() && get_workshed() == $item[Asdon Martin keyfob] && be_good($item[Asdon Martin keyfob])) {
+	if(!uniqueTypesShown["asdon"] && !isDriving() && get_workshed() == $item[Asdon Martin keyfob (on ring)] && be_good($item[Asdon Martin keyfob (on ring)])) {
 		pickerAsdon();
 
 		uniques.append('<tbody class="buffs"><tr class="effect"><td class="icon"><img src="/images/itemimages/');
-		uniques.append($item[Asdon Martin keyfob].image);
+		uniques.append($item[Asdon Martin keyfob (on ring)].image);
 		uniques.append('" width="20" height="20" /></td><td class="info"');
 		if(get_property("relayAddsUpArrowLinks").to_boolean())
 			uniques.append(' colspan="2"');
 		uniques.append('><a class="chit_launcher done" rel="chit_pickerasdon" href="#">Not Driving</a></td><td class="infizero right">00</td></tr></tbody>');
+	}
+
+	if(!uniqueTypesShown["holorecord"] && available_amount($item[Wrist-Boy]) > 0) {
+		pickerHoloRecord();
+
+		uniques.append('<tbody class="buffs"><tr class="effect"><td class="icon"><img src="/images/itemimages/');
+		uniques.append($item[Wrist-Boy].image);
+		uniques.append('" width="20" height="20" /></td><td class="info"');
+		if(get_property("relayAddsUpArrowLinks").to_boolean())
+			uniques.append(' colspan="2"');
+		uniques.append('><a class="chit_launcher done" rel="chit_pickerholorecord" href="#">Peace and Quiet</a></td><td class="infizero right">00</td></tr></tbody>');
 	}
 
 	// Add helper for Xiblaxian holo-wrist-puter
@@ -1171,7 +1243,7 @@ void bakeEffects() {
 		total += 1;
 	}
 
-	// Some 0 mp Intrinsics should have reminders for their specific classe
+	// Some 0 mp Intrinsics should have reminders for their specific class
 	void lack_effect(buffer result, skill sk, effect ef, string short_ef) {
 		if(have_skill(sk) && have_effect(ef) == 0 && my_class() == sk.class) {
 			result.append('<tr class="effect">');
@@ -1213,6 +1285,7 @@ void bakeEffects() {
 			new noncommod("cincho.gif", "cincho fiesta exit", "exit mode on your cincho"),
 			new noncommod("jparka2.gif", "spikolodon spike", "spikes are scaring away most monsters"),
 			new noncommod("pillminder.gif", "sneakisol", "avoiding fights until something cool happens"),
+			new noncommod("tuba.gif", "apriling band tuba", "tuba playing has scared away most monsters"),
 		};
 
 		foreach i,noncom in nomcommods {
@@ -1389,9 +1462,7 @@ void pickerFlorist(string[int] planted){
 			picker.append('<td><a href="' + sideCommand("florist plant "+plant) + '">' + plantDesc(plant, true) + '</a></td></tr>');
 		} else picker.append('<tr><td colspan="2">No more plants available to plant here</td></tr>');
 	}
-	picker.addLoader("Planting");
-	picker.append('</table></div>');
-	chitPickers["florist"] = picker;
+	picker.pickerFinish("Planting");
 }
 
 void addPlants(buffer result) {
@@ -1595,7 +1666,6 @@ void pickerThrall() {
 	picker.pickerStart("thrall", "Bind thy Thrall");
 
 	// Check for all thralls
-	picker.addLoader("Binding Thrall...");
 	boolean sad = true;
 	foreach x,t in binds
 		if(have_skill(t.skill) && t != my_thrall()) {
@@ -1611,8 +1681,7 @@ void pickerThrall() {
 			picker.addSadFace("Poor "+my_thrall().name+" has no other thralls to play with.");
 	}
 
-	picker.append('</table></div>');
-	chitPickers["thrall"] = picker;
+	picker.pickerFinish("Binding Thrall...");
 }
 
 void bakeThrall() {
@@ -1691,10 +1760,7 @@ void bakeVYKEA() {
 }
 
 string currentMood() {
-	matcher pattern = create_matcher(">mood (.*?)</a>", chitSource["mood"]);
-	if(find(pattern))
-		return group(pattern, 1);
-	return "???";
+	return get_property("currentMood");
 }
 
 void addCurrentMood(buffer result, boolean picker) {
@@ -1736,7 +1802,6 @@ void addCurrentMood(buffer result, boolean picker) {
 void pickMood() {
 	buffer picker;
 	picker.pickerStart("mood", "Select New Mood");
-	picker.addLoader("Getting Moody");
 	string moodname = currentMood();
 	boolean darkRow = false;
 	foreach i,m in get_moods() {
@@ -1780,10 +1845,7 @@ void pickMood() {
 		picker.addCurrentMood(true);
 	}
 
-	picker.append('</table>');
-	picker.append('</div>');
-
-	chitPickers["mood"] = picker.to_string();
+	picker.pickerFinish("Getting Moody");
 }
 
 void bakeToolbar() {
@@ -2198,7 +2260,6 @@ void addFury(buffer result) {
 void pickerSoulSauce() {
 	buffer picker;
 	picker.pickerStart("soulsauce", "Spend Soul Sauce");
-	picker.addLoader("Performing Saucery...");
 
 	void addSauceSkill(skill sk, string desc) {
 		desc += " (" + sk.soulsauce_cost() + " sauce)";
@@ -2236,8 +2297,7 @@ void pickerSoulSauce() {
 	addSauceSkill($skill[Soul Finger], "Delevel monster significantly");
 	addSauceSkill($skill[Soul Blaze], "Deal massive hot damage");
 
-	picker.append('</table></div>');
-	chitPickers["soulsauce"] = picker;
+	picker.pickerFinish("Performing Saucery...");
 }
 
 void addSauce(buffer result) {
@@ -2689,6 +2749,37 @@ void addWildfire(buffer result) {
 	}
 }
 
+void addWereProfessor(buffer result) {
+	matcher transform = create_matcher("<td align=right>Until Transform:</td><td align=left><b>([\\d,]+)</b>", chitSource["stats"]);
+	if (transform.find()) {
+		result.append('<tr><td class="label">');
+		if (have_effect($effect[Savage Beast]) > 0)
+			result.append('Prof');
+		else
+			result.append('Wolf');
+		result.append(' In</td><td class="info">');
+		result.append(transform.group(1));
+		result.append(' turn');
+		if (to_int(transform.group(1)) != 1)
+			result.append('s');
+		if(to_boolean(vars["chit.stats.showbars"])) {
+			result.append('<td class="progress"><div class="progressbox">');
+			result.append('<div class="progressbar" style="width:');
+			result.append(2 * to_int(transform.group(1)));
+			result.append('%"></div></div></td>');
+		}
+		else 
+			result.append('<td>&nbsp;</td>');
+	}	
+	matcher research = create_matcher("<td align=right>Research Points:</td><td align=left><b>([\\d,]+)</b>", chitSource["stats"]);
+	if (research.find()) {
+		result.append('<tr><td class="label">Research</td><td class="info">');
+		result.append(research.group(1));
+		if(to_boolean(vars["chit.stats.showbars"]))
+			result.append('<td>&nbsp;</td>');
+	}	
+}
+
 void addOrgan(buffer result, string organ, boolean showBars, int current, int limit, boolean eff) {
 	int sev = severity(organ, current, limit);
 	result.append('<tr><td class="label">'+organ+'</td>');
@@ -2890,12 +2981,9 @@ void addMCD(buffer result, boolean bake) {
 		buffer picker;
 		picker.pickerStart("mcd", mcdtitle);
 
-		//Loader
-		picker.addLoader(mcdbusy);
 		picker.mcdlist(true);
-		picker.append('</table></div>');
 
-		chitPickers["mcd"] = picker.to_string();
+		picker.pickerFinish(mcdbusy);
 	}
 }
 void addMCD(buffer result) { result.addMCD(false); }
@@ -3245,6 +3333,9 @@ void bakeStats() {
 			case "Wildfire":
 				result.addWildfire();
 				break;
+			case "WereProfessor":
+				result.addWereProfessor();
+				break;
 			}
 
 			if(numeric_modifier("Maximum Hooch") > 0)
@@ -3506,7 +3597,6 @@ void allCurrency(buffer result) {
 	result.append('</li></ul></div>');
 }
 
-// This function also makes use of gearName() which is in chit_brickGear.ash
 void pickOutfit() {
 	location loc = my_location();
 	if(loc == $location[none]) // Possibly beccause a fax was used
@@ -3609,11 +3699,16 @@ void pickOutfit() {
 		if(vars["chit." + layout + ".layout"].contains_text("gear"))
 			noGearBrick = false;
 	if(noGearBrick) {
-		foreach it in favGear
-			special.addGear(it, gearName(it, it.to_slot()));
-		foreach reason in recommendedGear
-			foreach it in recommendedGear[reason]
-				special.addGear(it, '<span style="font-weight:bold">(' + reason + ")</span> " + gearName(it, it.to_slot()));
+		foreach it in favGear {
+			chit_info info = getItemInfo(it);
+			special.addGear(it, namedesc(info));
+		}
+		foreach reason in recommendedGear {
+			foreach it in recommendedGear[reason] {
+				chit_info info = getItemInfo(it);
+				special.addGear(it, '<span style="font-weight:bold">(' + reason + ")</span> " + namedesc(info));
+			}
+		}
 
 		if(item_amount($item[Mega Gem]) > 0 && get_property("questL11Palindome") != "finished")
 			special.addGear("equip acc3 Talisman o\' Namsilat;equip acc1 Mega+Gem", "Talisman & Mega Gem");
@@ -3628,11 +3723,7 @@ void pickOutfit() {
 		picker.append(special);
 	}
 
-	picker.addLoader("Getting Dressed");
-	picker.append('</table>');
-	picker.append('</div>');
-
-	chitPickers["outfit"] = picker.to_string();
+	picker.pickerFinish("Getting Dressed");
 }
 
 void bakeCharacter() {
@@ -3747,6 +3838,12 @@ void bakeCharacter() {
 			return "campground.php";
 		case $class[Plumber]:
 			return "place.php?whichplace=mario";
+		case $class[Pig Skinner]:
+			return "inv_use.php?pwd=" + my_hash() + "&whichitem=11163";
+		case $class[Cheese Wizard]:
+			return "inv_use.php?pwd=" + my_hash() + "&whichitem=11164";
+		case $class[Jazz Agent]:
+			return "inv_use.php?pwd=" + my_hash() + "&whichitem=11165";
 		}
 		return "town.php";
 	}
@@ -3786,7 +3883,22 @@ void bakeCharacter() {
 		case "Way of the Surprising Fist": return "Surprising Fist";
 			//myPath = "Surprising Fist: " + get_property("fistSkillsKnown");
 		case "Bugbear Invasion": return "Bugbear&nbsp;Invasion";
-		case "Avatar of Jarlsberg": return "Jarlsberg";
+		case "Avatar of Jarlsberg": {
+			int points = 2 + get_property("jarlsbergPoints").to_int() + my_level();
+			foreach sk in $skills[Boil, The Most Important Meal, Conjure Eggs, Egg Man, Conjure Dough,
+				Early Riser, Fry, Coffeesphere, Conjure Vegetables, Radish Horse, Chop, Conjure Cheese, Slice,
+				Working Lunch, Lunch Like a King, Oilsphere, Bake, Food Coma, Conjure Potato, Hippotatomous,
+				Conjure Meat Product, Never Late for Dinner, Grill, Gristlesphere, Conjure Fruit,
+				Best Served Cold, Freeze, Nightcap, Conjure Cream, Blend, Cream Puff, Chocolatesphere] {
+				if(have_skill(sk)) {
+					--points;
+				}
+			}
+			if(points > 0) {
+				return "Jarlsberg (" + points + " skill points)";
+			}
+			return "Jarlsberg";
+		}
 		case "KOLHS": return "<a target='mainpane' style='font-weight:normal;' href='place.php?whichplace=KOLHS'>KOLHS</a>";
 		case "Class Act II: A Class For Pigs": return "Class Act <span style='font-family:Times New Roman,times,serif'>II</span>"; // Shorten. Also II looks a LOT better in serif
 		case "Avatar of Sneaky Pete": return "Sneaky Pete";
@@ -4137,7 +4249,7 @@ void bakeHeader() {
 				string singlefamfav = singlefamfavmatch.group(0);
 				singlefamfav = singlefamfav.replace_string("[[", "[");
 				// Attend to familiar images also. (This uses mdofied familiar images!)
-				singlefamfav = singlefamfav.replace_string(singlefamfavmatch.group(2), familiar_image(fam));
+				singlefamfav = singlefamfav.replace_string(singlefamfavmatch.group(2), getFamiliarInfo(fam).image);
 				replacefamfavs += singlefamfav + ",";
 			}
 		}
@@ -4927,4 +5039,14 @@ void main() {
 		set_property("chit.notifyShenanigans.done", "true");
 	}
 	visit_url().modifyPage().write();
+
+	foreach tag, openCount in tagsOpen {
+		if(openCount > 0) {
+			print('Found ' + openCount + ' open <' + tag + '>s', 'red');
+		}
+	}
+
+	foreach i, picker in pickerStack {
+		print('Never finished picker ' + picker, 'red');
+	}
 }
